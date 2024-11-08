@@ -27,54 +27,52 @@
             <a class="link" href="https://www.t13.cl/noticia/nacional/fin-al-cae-calcula-cuanto-deuda-universitaria-te-podrian-condonar-6-11-2024" target="_blank">Mas información sobre el cálculo</a>
           </p>
           <div id="app">
-            <form @submit.prevent>
-              <div class="toggle">
-                <nav>
-                  <label class="switch">
-                    <input type="checkbox" id="egreso" v-model="egreso">
-                    <span></span>
-                  </label>
-                  <div class="max">
-                    <div>Terminé mi carrera</div>
-                  </div>
-                </nav>
-              </div>
-              
-              <div class="toggle">
-                <nav>
-                  <label class="switch">
-                    <input type="checkbox" id="al_dia" v-model="al_dia">
-                    <span></span>
-                  </label>
-                  <div class="max">
-                    <div>Estoy al día con los pagos</div>
-                  </div>
-                </nav>
-              </div>
-      
-              <div class="field label border round fill large">
-                <input type="number" id="ct_pagas" v-model.number="ct_pagas">
-                <label>Cuotas pagadas</label>
-              </div>  
-      
-              <div class="field label border round fill large">
-                <input type="number" id="ct_totales" v-model.number="ct_totales">
-                <label>Cuotas totales</label>
-              </div>
-      
-              <div class="field label border round fill large">
-                <input type="number" id="valor_uf" v-model.number="valor_uf">
-                <label>Valor UF</label>
-                <span class="helper">
-                  Obtenido a diario desde 
-                  <a href="https://mindicador.cl" target="_blank">miindicador.cl</a>
-                </span>
-              </div>
-        
-              <div class="border primary medium padding center-align">
-                <h6><strong>Monto Condonación:</strong> {{ result | currency }}</h6>
-              </div>
-            </form>
+            <div class="toggle">
+              <nav>
+                <label class="switch">
+                  <input type="checkbox" id="egreso" v-model="egreso">
+                  <span></span>
+                </label>
+                <div class="max">
+                  <div>Terminé mi carrera</div>
+                </div>
+              </nav>
+            </div>
+            
+            <div class="toggle">
+              <nav>
+                <label class="switch">
+                  <input type="checkbox" id="al_dia" v-model="al_dia">
+                  <span></span>
+                </label>
+                <div class="max">
+                  <div>Estoy al día con los pagos</div>
+                </div>
+              </nav>
+            </div>
+    
+            <div class="field label border round fill large">
+              <input type="number" id="ct_pagas" v-model.number="ct_pagas">
+              <label>Cuotas pagadas</label>
+            </div>  
+    
+            <div class="field label border round fill large">
+              <input type="number" id="ct_totales" v-model.number="ct_totales">
+              <label>Cuotas totales</label>
+            </div>
+    
+            <div class="field label border round fill large">
+              <input type="number" id="valor_uf" v-model.number="valor_uf">
+              <label>Valor UF</label>
+              <span class="helper">
+                Obtenido a diario desde 
+                <a href="https://mindicador.cl" target="_blank">miindicador.cl</a>
+              </span>
+            </div>
+
+            <button class="extra" style="margin: 0;" @click="en_uf = !en_uf">
+              <h6><strong>Monto Condonación:</strong> {{ result }}</h6>
+            </button>
           </div>
         </div>
         
@@ -86,11 +84,6 @@
   </main>
 
   <script>
-    Vue.filter('currency', function (value) {
-      if (!value) return '';
-      return '$' + Math.round(value).toLocaleString('es-CL');
-    });
-
     async function fetchUFValue() {
       const ufValue = localStorage.getItem('ufValue');
       const ufDate = localStorage.getItem('ufDate');
@@ -116,6 +109,7 @@
     new Vue({
       el: '#app',
       data: {
+        en_uf: false,
         egreso: false,
         al_dia: false,
         ct_pagas: 0,
@@ -132,7 +126,12 @@
           const bitmask = (this.egreso ? 1 : 0) | (this.al_dia ? 2 : 0);
           const map = [30, 20, 60, 40];
           let uf_mult = map[bitmask];
-          return (1 + (this.ct_pagas / this.ct_totales)) * uf_mult * this.valor_uf;
+          let result = (1 + (this.ct_pagas / this.ct_totales)) * uf_mult;
+            if (this.en_uf) {
+            return result % 1 === 0 ? result.toFixed(0) + ' UF' : result.toFixed(2) + ' UF';
+          } else {
+            return '$' + Math.round(result * this.valor_uf).toLocaleString('es-CL');
+          }
         }
       }
     });
