@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Calculadora de Condonación CAE</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <script src="https://cdn.jsdelivr.net/npm/vue@2"></script>
+  <link href="https://cdn.jsdelivr.net/npm/beercss@3.7.12/dist/cdn/beer.min.css" rel="stylesheet">
+</head>
+<style>
+  #app {
+    margin-top: 2em;
+  }
+  .toggle {
+    margin-bottom: 1em;
+  }
+</style>
+<body>
+  <main class="responsive">
+    <div class="center-align middle-align">
+      <article class="round">
+        <div>
+          <h5>Calculadora de Condonación CAE</h5>
+          <p class="left-align">
+            <a class="link" href="https://www.t13.cl/noticia/nacional/fin-al-cae-calcula-cuanto-deuda-universitaria-te-podrian-condonar-6-11-2024" target="_blank">Mas información sobre el cálculo</a>
+          </p>
+          <div id="app">
+            <form @submit.prevent>
+              <div class="toggle">
+                <nav>
+                  <label class="switch">
+                    <input type="checkbox" id="egreso" v-model="egreso">
+                    <span></span>
+                  </label>
+                  <div class="max">
+                    <div>Terminé mi carrera</div>
+                  </div>
+                </nav>
+              </div>
+              
+              <div class="toggle">
+                <nav>
+                  <label class="switch">
+                    <input type="checkbox" id="al_dia" v-model="al_dia">
+                    <span></span>
+                  </label>
+                  <div class="max">
+                    <div>Estoy al día con los pagos</div>
+                  </div>
+                </nav>
+              </div>
+      
+              <div class="field label border round fill large">
+                <input type="number" id="ct_pagas" v-model.number="ct_pagas">
+                <label>Cuotas pagadas</label>
+              </div>  
+      
+              <div class="field label border round fill large">
+                <input type="number" id="ct_totales" v-model.number="ct_totales">
+                <label>Cuotas totales</label>
+              </div>
+      
+              <div class="field label border round fill large">
+                <input type="number" id="valor_uf" v-model.number="valor_uf">
+                <label>Valor UF</label>
+                <span class="helper">
+                  Obtenido a diario desde 
+                  <a href="https://mindicador.cl" target="_blank">miindicador.cl</a>
+                </span>
+              </div>
+        
+              <div class="border primary medium padding center-align">
+                <h6><strong>Monto Condonación:</strong> {{ result | currency }}</h6>
+              </div>
+            </form>
+          </div>
+        </div>
+      </article>
+      </div>
+    
+    
+  </main>
+
+  <script>
+    Vue.filter('currency', function (value) {
+      if (!value) return '';
+      return '$' + Math.round(value).toLocaleString('es-CL');
+    });
+
+    async function fetchUFValue() {
+      const ufValue = localStorage.getItem('ufValue');
+      const ufDate = localStorage.getItem('ufDate');
+      const currentDate = new Date().setHours(0, 0, 0, 0);
+      const savedDate = new Date(ufDate).setHours(0, 0, 0, 0);
+
+      if (ufValue && ufDate && (currentDate <= savedDate)) {
+        return parseFloat(ufValue);
+      }
+      try {
+        const response = await fetch('https://mindicador.cl/api/uf');
+        const data = await response.json();
+        let newValue = data.serie[0].valor;
+        localStorage.setItem('ufValue', newValue);
+        localStorage.setItem('ufDate', new Date().setHours(0, 0, 0, 0));
+        return newValue;
+      } catch (error) {
+        console.error('Error fetching UF value:', error);
+        return 30000;
+      }
+    }
+
+    new Vue({
+      el: '#app',
+      data: {
+        egreso: false,
+        al_dia: false,
+        ct_pagas: 0,
+        ct_totales: 270,
+        valor_uf: 30000
+      },
+      created() {
+        fetchUFValue().then(value => {
+          this.valor_uf = value;
+        });
+      },
+      computed: {
+        result() {
+          const bitmask = (this.egreso ? 1 : 0) | (this.al_dia ? 2 : 0);
+          const map = [30, 20, 60, 40];
+          let uf_mult = map[bitmask];
+          return (1 + (this.ct_pagas / this.ct_totales)) * uf_mult * this.valor_uf;
+        }
+      }
+    });
+  </script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/beercss@3.7.12/dist/cdn/beer.min.js"></script>
+  <script type="module" src="https://cdn.jsdelivr.net/npm/material-dynamic-colors@1.1.2/dist/cdn/material-dynamic-colors.min.js"></script>
+</body>
+</html>
